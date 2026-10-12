@@ -17,7 +17,7 @@ internal static class ItemIcons
     [MonoDetourHookInitialize]
     private static void Setup()
     {
-        Mdh.RoR2.UI.ItemIcon.SetItemIndex_RoR2_ItemIndex_System_Int32_System_Single.ILHook(SetItemIndex);
+        Mdh.RoR2.UI.ItemIcon.SetItemIndex_RoR2_UI_ItemIcon_SetItemIndexArgs.ILHook(SetItemIndex);
     }
 
 
