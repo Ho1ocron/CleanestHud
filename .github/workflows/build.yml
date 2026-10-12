@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # only used to create a release on tag pushes
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build Code/CleanestHud.csproj -c Release
+
+      - name: Package for Thunderstore
+        run: |
+          set -euo pipefail
+          build_dir=Code/bin/Release/netstandard2.1
+          pkg="Thunderstore/Package Files"
+
+          mkdir -p staging/plugins out
+          cp "$pkg/manifest.json" "$pkg/icon.png" "$pkg/CHANGELOG.md" staging/
+          cp README.md staging/README.md
+          cp "$build_dir/LordVGames.CleanestHud.dll" staging/plugins/CleanestHud.dll
+          cp "$build_dir/LordVGames.CleanestHud.pdb" staging/plugins/CleanestHud.pdb
+          cp Code/CleanestHud.language staging/plugins/
+          # prebuilt Unity asset bundle, can't be built in CI
+          cp "$pkg/plugins/cleanesthud" staging/plugins/
+
+          (cd staging && zip -r ../out/CleanestHud.zip .)
+          cp staging/plugins/CleanestHud.dll out/CleanestHud.dll
+          unzip -l out/CleanestHud.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CleanestHud-${{ github.sha }}
+          path: out/*
+          if-no-files-found: error
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/CleanestHud.dll
+            out/CleanestHud.zip
+          generate_release_notes: true
